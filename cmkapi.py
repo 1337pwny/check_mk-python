@@ -95,3 +95,53 @@ class CmkApi:
             return None
         else:
             return None
+
+    def deleteHost(self, hostname):
+        resp = self.session.delete(
+            f"{self.url}/objects/host_config/{hostname}",
+        )
+        if resp.status_code == 200:
+            return True
+        elif resp.status_code == 204:
+            return False
+        else:
+            return False
+
+    def doServiceDiscovery(self, hostname):
+        resp = self.session.post(
+            f"{self.url}/objects/host/{hostname}/actions/discover_services/invoke",
+            headers={
+                "Content-Type": 'application/json',
+                # (required) A header specifying which type of content is in the request/response body.
+            },
+            json={'mode': 'refresh'},
+        )
+        if resp.status_code == 200:
+            #ToDo: Return list of discovered Services
+            return True
+        elif resp.status_code == 204:
+            return None
+        else:
+            return None
+
+    def activateChanges(self, forceForeign=False):
+
+        resp = self.session.post(
+            f"{self.url}/domain-types/activation_run/actions/activate-changes/invoke",
+            headers={
+                "Content-Type": 'application/json',
+                # (required) A header specifying which type of content is in the request/response body.
+            },
+            json={
+                'redirect': False,
+                'sites': [self.site],
+                'force_foreign_changes': forceForeign
+            },
+            allow_redirects=True,
+        )
+        if resp.status_code == 200:
+            return True
+        elif resp.status_code == 204:
+            return False
+        else:
+            return False
