@@ -145,3 +145,60 @@ class CmkApi:
             return False
         else:
             return False
+
+    def checkIfFolderExists(self, folder):
+        # assure, that we always have a starting slash
+        if folder[:1] != "/" and folder[:1] != "~" :
+            folder = "/"+folder
+        # Since checkmk only allows ~ as separator:
+        folder = folder.replace("/","~")
+        resp = self.session.get(
+            f"{self.url}/objects/folder_config/{folder}",
+            params={  # goes into query string
+                "show_hosts": False,  # When set, all hosts that are stored in this folder will also be shown.
+            },
+        )
+        if resp.status_code == 200:
+            return True
+        elif resp.status_code == 204:
+            return True
+        else:
+            return False
+
+    def __createFolder(self,foldername, parent):
+        resp = self.session.post(
+            f"{self.url}/domain-types/folder_config/collections/all",
+            headers={
+                "Content-Type": 'application/json',
+                # (required) A header specifying which type of content is in the request/response body.
+            },
+            json={
+                'name': foldername,
+                'title': foldername,
+                'parent': parent,
+                'attributes': {
+                    'tag_criticality': 'prod'
+                }
+            },
+        )
+        if resp.status_code == 200:
+            return True
+        elif resp.status_code == 204:
+            return True
+        else:
+            return False
+
+    def createRecursiveFolderIfNotExist(self, folder):
+        folder = folder.replace("/", "~")
+        if folder[:1] == "~":
+            folder = folder[1:]
+        folderTree = folder.split("~")
+        path=""
+        for f in folderTree:
+            parent = path
+            if parent == "":
+                parent = "~"
+            currentFolder = f
+            if self.checkIfFolderExists(path+"~"+currentFolder) is False:
+                self.__createFolder(currentFolder,parent)
+            path = path+"~"+currentFolder
